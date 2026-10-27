@@ -1,0 +1,833 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>NexusPay Wallet - Telegram Mini App</title>
+    <!-- Telegram Web App SDK -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        darkBg: '#0f141c',
+                        cardBg: '#182232',
+                        cardBgLight: '#ffffff',
+                        borderDark: '#263346',
+                        borderLight: '#e5e7eb',
+                        primary: '#2481cc',
+                        primaryHover: '#1e6db5',
+                        tronRed: '#ff006b'
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; user-select: none; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="bg-darkBg text-gray-100 min-h-screen transition-colors duration-300 flex justify-center items-center">
+
+    <!-- ================= PIN & REGISTRATION AUTH CONTAINER ================= -->
+    <div id="authContainer" class="fixed inset-0 z-50 flex items-center justify-center bg-darkBg p-4">
+        
+        <!-- Paso 1: Ingresar / Desbloquear Billetera (Login) -->
+        <div id="loginStep" class="w-full max-w-sm p-6 text-center">
+            <div class="w-16 h-16 bg-primary/20 rounded-2xl flex items-center justify-center mx-auto mb-4 text-primary text-2xl">
+                <i class="fa-solid fa-lock"></i>
+            </div>
+            <h2 class="text-xl font-bold mb-2">Desbloquear Billetera</h2>
+            <p class="text-gray-400 text-xs mb-8">Introduce tu PIN de 6 dígitos para acceder a tu cuenta.</p>
+            
+            <div class="flex justify-center gap-2 mb-8">
+                <input type="password" inputmode="numeric" maxlength="1" class="pin-enter-input w-11 h-14 text-center text-2xl bg-cardBg border border-borderDark rounded-xl focus:border-primary focus:outline-none" />
+                <input type="password" inputmode="numeric" maxlength="1" class="pin-enter-input w-11 h-14 text-center text-2xl bg-cardBg border border-borderDark rounded-xl focus:border-primary focus:outline-none" />
+                <input type="password" inputmode="numeric" maxlength="1" class="pin-enter-input w-11 h-14 text-center text-2xl bg-cardBg border border-borderDark rounded-xl focus:border-primary focus:outline-none" />
+                <input type="password" inputmode="numeric" maxlength="1" class="pin-enter-input w-11 h-14 text-center text-2xl bg-cardBg border border-borderDark rounded-xl focus:border-primary focus:outline-none" />
+                <input type="password" inputmode="numeric" maxlength="1" class="pin-enter-input w-11 h-14 text-center text-2xl bg-cardBg border border-borderDark rounded-xl focus:border-primary focus:outline-none" />
+                <input type="password" inputmode="numeric" maxlength="1" class="pin-enter-input w-11 h-14 text-center text-2xl bg-cardBg border border-borderDark rounded-xl focus:border-primary focus:outline-none" />
+            </div>
+            <button onclick="verifyPin()" class="w-full bg-primary text-white font-bold py-3 rounded-xl hover:bg-primaryHover transition shadow-lg text-sm mb-4">Desbloquear</button>
+            <button onclick="showRegisterStep()" class="text-xs text-primary hover:underline">¿No tienes cuenta? Registrarse</button>
+        </div>
+
+        <!-- Paso 2: Registro de Usuario (Nombre + PIN + Captcha) -->
+        <div id="registerStep" class="hidden w-full max-w-sm p-6 text-center">
+            <div class="w-16 h-16 bg-primary/20 rounded-2xl flex items-center justify-center mx-auto mb-4 text-primary text-2xl">
+                <i class="fa-solid fa-user-plus"></i>
+            </div>
+            <h2 class="text-xl font-bold mb-2">Registro en NexusPay</h2>
+            <p class="text-gray-400 text-xs mb-6">Crea tu nombre de usuario y tu PIN de 6 dígitos.</p>
+            
+            <div class="space-y-4 text-left mb-6">
+                <div>
+                    <label class="text-xs text-gray-400 block mb-1">Nombre de Usuario</label>
+                    <input type="text" id="regUsernameInput" placeholder="Ej. CryptoMaster" class="w-full bg-cardBg border border-borderDark rounded-xl p-3 text-sm focus:outline-none focus:border-primary text-white">
+                </div>
+                <div>
+                    <label class="text-xs text-gray-400 block mb-1">PIN de Seguridad (6 dígitos)</label>
+                    <div class="flex justify-center gap-2">
+                        <input type="password" inputmode="numeric" maxlength="1" class="pin-create-input w-10 h-12 text-center text-xl bg-cardBg border border-borderDark rounded-xl focus:border-primary focus:outline-none" />
+                        <input type="password" inputmode="numeric" maxlength="1" class="pin-create-input w-10 h-12 text-center text-xl bg-cardBg border border-borderDark rounded-xl focus:border-primary focus:outline-none" />
+                        <input type="password" inputmode="numeric" maxlength="1" class="pin-create-input w-10 h-12 text-center text-xl bg-cardBg border border-borderDark rounded-xl focus:border-primary focus:outline-none" />
+                        <input type="password" inputmode="numeric" maxlength="1" class="pin-create-input w-10 h-12 text-center text-xl bg-cardBg border border-borderDark rounded-xl focus:border-primary focus:outline-none" />
+                        <input type="password" inputmode="numeric" maxlength="1" class="pin-create-input w-10 h-12 text-center text-xl bg-cardBg border border-borderDark rounded-xl focus:border-primary focus:outline-none" />
+                        <input type="password" inputmode="numeric" maxlength="1" class="pin-create-input w-10 h-12 text-center text-xl bg-cardBg border border-borderDark rounded-xl focus:border-primary focus:outline-none" />
+                    </div>
+                </div>
+                <div>
+                    <label class="text-xs text-gray-400 block mb-1">Verificación Anti-Robot (Captcha)</label>
+                    <div class="bg-cardBg border border-borderDark rounded-xl p-3 flex items-center justify-between">
+                        <span id="captchaQuestion" class="text-xs font-mono text-primary font-bold">4 + 3 = ?</span>
+                        <input type="number" id="captchaAnswerInput" placeholder="Resultado" class="w-24 bg-darkBg border border-borderDark rounded-lg p-2 text-xs text-center focus:outline-none focus:border-primary">
+                    </div>
+                </div>
+            </div>
+
+            <button onclick="registerNewUser()" class="w-full bg-primary text-white font-bold py-3 rounded-xl hover:bg-primaryHover transition shadow-lg text-sm mb-3">Completar Registro</button>
+            <button onclick="showLoginStep()" class="text-xs text-primary hover:underline">¿Ya estás registrado? Iniciar Sesión</button>
+        </div>
+
+    </div>
+
+    <!-- ================= MAIN APP CONTAINER ================= -->
+    <div id="mainApp" class="hidden w-full max-w-md min-h-screen pb-24 relative flex flex-col">
+        
+        <!-- Header -->
+        <header class="p-4 flex items-center justify-between border-b border-borderDark bg-darkBg/80 backdrop-blur sticky top-0 z-30">
+            <div class="flex items-center gap-3">
+                <div id="tgUserAvatar" class="w-10 h-10 rounded-full bg-primary/20 text-primary font-bold flex items-center justify-center border border-primary/30">U</div>
+                <div>
+                    <h3 id="tgUserNameDisplay" class="text-sm font-bold truncate max-w-[140px]">CryptoUser</h3>
+                    <span class="text-[10px] text-green-400 flex items-center gap-1"><i class="fa-solid fa-circle text-[6px]"></i> Tron Mainnet</span>
+                </div>
+            </div>
+            <div class="flex items-center gap-2">
+                <button onclick="lockWallet()" title="Bloquear Billetera" class="w-9 h-9 rounded-xl bg-cardBg border border-borderDark flex items-center justify-center hover:text-primary transition">
+                    <i class="fa-solid fa-lock text-sm"></i>
+                </button>
+                <div class="px-2.5 py-1 rounded-xl bg-cardBg border border-borderDark text-primary font-bold text-xs" id="networkBadge">TRC20</div>
+            </div>
+        </header>
+
+        <!-- Dynamic Views Container -->
+        <main class="flex-1 p-4 overflow-y-auto no-scrollbar">
+            
+            <!-- VIEW 1: WALLET -->
+            <section id="view-wallet" class="space-y-6">
+                <!-- Balance Card -->
+                <div class="bg-gradient-to-br from-cardBg to-darkBg border border-borderDark p-6 rounded-3xl relative overflow-hidden shadow-lg">
+                    <div class="absolute -right-10 -bottom-10 w-40 h-40 bg-primary/10 rounded-full blur-2xl"></div>
+                    <span class="text-xs text-gray-400 uppercase tracking-wider">Balance Total Estimado</span>
+                    <div class="flex items-baseline gap-2 mt-1">
+                        <h1 id="totalBalance" class="text-3xl font-extrabold tracking-tight">$0.00</h1>
+                        <span id="globalChange" class="text-xs font-semibold text-green-400">+0.00%</span>
+                    </div>
+                    
+                    <!-- Action Buttons -->
+                    <div class="grid grid-cols-2 gap-3 mt-6">
+                        <button onclick="openModal('deposit')" class="flex items-center justify-center gap-2 bg-primary text-white font-bold py-3 px-4 rounded-xl hover:bg-primaryHover transition shadow-md text-sm">
+                            <i class="fa-solid fa-arrow-down-long"></i> Depositar
+                        </button>
+                        <button onclick="openModal('withdraw')" class="flex items-center justify-center gap-2 bg-cardBg border border-borderDark text-gray-200 font-bold py-3 px-4 rounded-xl hover:bg-borderDark transition text-sm">
+                            <i class="fa-solid fa-arrow-up-long"></i> Retirar
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Live Tokens List -->
+                <div>
+                    <div class="flex items-center justify-between mb-3">
+                        <h2 class="text-xs font-bold uppercase tracking-wider text-gray-400">Activos Tron (TRC20) en Vivo</h2>
+                        <span class="text-[10px] text-gray-500 animate-pulse"><i class="fa-solid fa-bolt text-primary"></i> Precios reales</span>
+                    </div>
+                    <div id="tokensList" class="space-y-3">
+                        <!-- JS injected tokens -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- VIEW 2: STAKING -->
+            <section id="view-staking" class="hidden space-y-6">
+                <div class="bg-gradient-to-r from-blue-900/30 to-cardBg border border-blue-500/30 p-6 rounded-3xl">
+                    <div class="flex items-center justify-between mb-4">
+                        <span class="bg-blue-500/20 text-blue-400 text-xs px-3 py-1 rounded-full font-semibold">APY 4.6% Anual</span>
+                        <i class="fa-solid fa-coins text-blue-400 text-xl"></i>
+                    </div>
+                    <h2 class="text-xl font-bold mb-1">Staking Flexible Web3</h2>
+                    <p class="text-xs text-gray-400 mb-6">Bloquea tus criptomonedas de la red Tron y genera recompensas pasivas diarias.</p>
+                    
+                    <div class="bg-darkBg/60 p-4 rounded-2xl border border-borderDark mb-4">
+                        <div class="flex justify-between text-xs text-gray-400 mb-1">
+                            <span>Recompensas acumuladas</span>
+                            <span id="stakingRewards" class="text-green-400 font-bold">0.0000 TRX</span>
+                        </div>
+                        <div class="flex justify-between text-xs text-gray-400">
+                            <span>Total en Staking</span>
+                            <span id="totalStaked" class="text-gray-200 font-bold">0.00 TRX</span>
+                        </div>
+                    </div>
+
+                    <button onclick="openStakingModal()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-xl transition shadow-lg text-sm">
+                        Stakear Activos
+                    </button>
+                </div>
+
+                <div class="bg-cardBg border border-borderDark p-5 rounded-2xl">
+                    <h3 class="font-bold text-sm mb-3">Historial de Staking</h3>
+                    <div id="stakingList" class="text-xs text-gray-400 text-center py-6">
+                        No tienes activos en staking actualmente.
+                    </div>
+                </div>
+            </section>
+
+            <!-- VIEW 3: REFERRALS -->
+            <section id="view-referrals" class="hidden space-y-6">
+                <div class="bg-gradient-to-br from-indigo-900/30 to-cardBg border border-indigo-500/30 p-6 rounded-3xl text-center">
+                    <div class="w-14 h-14 bg-indigo-500/20 rounded-full flex items-center justify-center mx-auto mb-4 text-indigo-400 text-xl">
+                        <i class="fa-solid fa-users"></i>
+                    </div>
+                    <h2 class="text-xl font-bold mb-1">Programa de Referidos</h2>
+                    <p class="text-xs text-gray-400 mb-6">Invita amigos mediante tu enlace y gana un <strong class="text-indigo-400">2% de comisión</strong> de sus depósitos.</p>
+                    
+                    <div class="bg-darkBg border border-borderDark p-3 rounded-xl flex items-center justify-between mb-4">
+                        <span id="refLink" class="text-xs text-gray-300 truncate max-w-[200px]">https://t.me/NexusPayBot?start=ref_user</span>
+                        <button onclick="copyRefLink()" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs px-3 py-2 rounded-lg font-semibold transition">Copiar</button>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3 text-left">
+                        <div class="bg-darkBg/60 p-4 rounded-xl border border-borderDark">
+                            <span class="text-[10px] text-gray-400 uppercase">Referidos Totales</span>
+                            <h4 id="totalReferrals" class="text-lg font-bold text-white mt-1">0</h4>
+                        </div>
+                        <div class="bg-darkBg/60 p-4 rounded-xl border border-borderDark">
+                            <span class="text-[10px] text-gray-400 uppercase">Ganancias</span>
+                            <h4 id="refEarnings" class="text-lg font-bold text-green-400 mt-1">$0.00</h4>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- VIEW 4: SETTINGS -->
+            <section id="view-settings" class="hidden space-y-4">
+                <h2 class="text-lg font-bold mb-4">Ajustes de Billetera</h2>
+                
+                <div class="bg-cardBg border border-borderDark rounded-2xl p-4 space-y-4">
+                    <!-- Idioma -->
+                    <div class="flex items-center justify-between pb-3 border-b border-borderDark">
+                        <div class="flex items-center gap-3">
+                            <i class="fa-solid fa-globe text-primary"></i>
+                            <span class="text-sm font-medium">Idioma / Language</span>
+                        </div>
+                        <select id="langSelect" onchange="changeLanguage(this.value)" class="bg-darkBg border border-borderDark text-xs text-gray-200 rounded-lg p-2 focus:outline-none focus:border-primary">
+                            <option value="es">Español</option>
+                            <option value="en">English</option>
+                            <option value="ru">Русский</option>
+                        </select>
+                    </div>
+
+                    <!-- Tema -->
+                    <div class="flex items-center justify-between pb-3 border-b border-borderDark">
+                        <div class="flex items-center gap-3">
+                            <i class="fa-solid fa-moon text-primary"></i>
+                            <span class="text-sm font-medium">Tema Oscuro / Claro</span>
+                        </div>
+                        <button onclick="toggleTheme()" class="w-12 h-6 bg-primary rounded-full relative transition flex items-center px-1">
+                            <div id="themeToggleBall" class="w-4 h-4 bg-darkBg rounded-full transition-transform transform translate-x-6"></div>
+                        </button>
+                    </div>
+
+                    <!-- Cambiar PIN -->
+                    <div class="flex items-center justify-between pb-3 border-b border-borderDark">
+                        <div class="flex items-center gap-3">
+                            <i class="fa-solid fa-key text-primary"></i>
+                            <span class="text-sm font-medium">Cambiar PIN de 6 dígitos</span>
+                        </div>
+                        <button onclick="openChangePinModal()" class="text-xs bg-darkBg border border-borderDark hover:border-primary px-3 py-1.5 rounded-lg transition">Modificar</button>
+                    </div>
+
+                    <!-- Frase Semilla -->
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <i class="fa-solid fa-file-shield text-primary"></i>
+                            <span class="text-sm font-medium">Frase Semilla (Backup)</span>
+                        </div>
+                        <button onclick="revealSeedPhrase()" class="text-xs bg-primary/20 text-primary hover:bg-primary/30 px-3 py-1.5 rounded-lg font-semibold transition">Ver Frase</button>
+                    </div>
+                </div>
+
+                <div class="bg-cardBg border border-borderDark rounded-2xl p-4 text-center">
+                    <span class="text-xs text-gray-500">NexusPay TMA v2.9.0 (TRON Network)</span>
+                </div>
+            </section>
+
+        </main>
+
+        <!-- Bottom Navigation Bar -->
+        <nav class="absolute bottom-0 left-0 right-0 bg-cardBg/90 backdrop-blur border-t border-borderDark py-2 px-6 flex justify-between items-center z-30">
+            <button onclick="switchView('wallet')" class="nav-btn flex flex-col items-center gap-1 text-primary" data-target="wallet">
+                <i class="fa-solid fa-wallet text-base"></i>
+                <span class="text-[10px] font-medium">Billetera</span>
+            </button>
+            <button onclick="switchView('staking')" class="nav-btn flex flex-col items-center gap-1 text-gray-400 hover:text-gray-200" data-target="staking">
+                <i class="fa-solid fa-chart-line text-base"></i>
+                <span class="text-[10px] font-medium">Staking</span>
+            </button>
+            <button onclick="switchView('referrals')" class="nav-btn flex flex-col items-center gap-1 text-gray-400 hover:text-gray-200" data-target="referrals">
+                <i class="fa-solid fa-user-group text-base"></i>
+                <span class="text-[10px] font-medium">Referidos</span>
+            </button>
+            <button onclick="switchView('settings')" class="nav-btn flex flex-col items-center gap-1 text-gray-400 hover:text-gray-200" data-target="settings">
+                <i class="fa-solid fa-gear text-base"></i>
+                <span class="text-[10px] font-medium">Ajustes</span>
+            </button>
+        </nav>
+
+    </div>
+
+    <!-- ================= MODALS ================= -->
+    
+    <!-- Modal Depósito / Retiro -->
+    <div id="actionModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+        <div class="bg-cardBg border border-borderDark w-full max-w-sm p-6 rounded-3xl shadow-2xl relative">
+            <button onclick="closeModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+            <h3 id="modalTitle" class="text-lg font-bold mb-4">Depositar Criptomoneda</h3>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="text-xs text-gray-400 block mb-1">Seleccionar Moneda</label>
+                    <select id="modalCoinSelect" class="w-full bg-darkBg border border-borderDark rounded-xl p-3 text-sm focus:outline-none focus:border-primary">
+                        <option value="TRX">TRON (TRX)</option>
+                        <option value="USDT">Tether USD (USDT-TRC20)</option>
+                        <option value="USDC">USD Coin (USDC-TRC20)</option>
+                        <option value="BTT">BitTorrent (BTT)</option>
+                        <option value="JST">JUST (JST)</option>
+                        <option value="SUN">SUN Token (SUN)</option>
+                        <option value="WIN">WinkLink (WIN)</option>
+                        <option value="NFT">APENFT (NFT)</option>
+                    </select>
+                </div>
+
+                <div id="depositInfoContainer">
+                    <label class="text-xs text-gray-400 block mb-1">Dirección de Depósito (TRC20)</label>
+                    <div class="bg-darkBg border border-borderDark p-3 rounded-xl flex items-center justify-between">
+                        <span id="depositAddressText" class="text-xs text-primary font-mono truncate mr-2">THMVHPBBuJDtH8hVL3pZja3tHCNoxoAa43</span>
+                        <button onclick="copyDepositAddress()" class="text-gray-400 hover:text-white"><i class="fa-solid fa-copy"></i></button>
+                    </div>
+                    <p class="text-[10px] text-gray-500 mt-2">Envía únicamente activos compatibles con la red Tron (TRC20).</p>
+                </div>
+
+                <div id="withdrawInfoContainer" class="hidden space-y-3">
+                    <div>
+                        <label class="text-xs text-gray-400 block mb-1">Dirección de Destino</label>
+                        <input type="text" placeholder="Introduce dirección TRC20..." class="w-full bg-darkBg border border-borderDark rounded-xl p-3 text-xs focus:outline-none focus:border-primary">
+                    </div>
+                    <div>
+                        <label class="text-xs text-gray-400 block mb-1">Cantidad a retirar</label>
+                        <input type="number" id="withdrawAmount" placeholder="0.00" class="w-full bg-darkBg border border-borderDark rounded-xl p-3 text-sm focus:outline-none focus:border-primary">
+                    </div>
+                </div>
+
+                <button id="modalActionBtn" onclick="executeModalAction()" class="w-full bg-primary text-white font-bold py-3 rounded-xl hover:bg-primaryHover transition mt-2 text-sm">Confirmar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Frase Semilla -->
+    <div id="seedModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+        <div class="bg-cardBg border border-borderDark w-full max-w-sm p-6 rounded-3xl shadow-2xl relative text-center">
+            <button onclick="closeSeedModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+            <div class="w-12 h-12 bg-yellow-500/20 text-yellow-400 rounded-full flex items-center justify-center mx-auto mb-3">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+            <h3 class="text-lg font-bold mb-1">Frase Semilla Secreta</h3>
+            <p class="text-xs text-red-400 mb-4">Nunca compartas estas 12 palabras. Con ellas se puede acceder por completo a tus fondos.</p>
+            
+            <div id="seedPhraseBox" class="grid grid-cols-3 gap-2 bg-darkBg p-4 rounded-xl border border-borderDark text-xs font-mono text-gray-300 mb-3">
+                <!-- Injected words -->
+            </div>
+            <button onclick="copySeedPhrase()" class="w-full bg-cardBg border border-borderDark hover:border-primary text-gray-200 font-bold py-2.5 rounded-xl text-sm mb-2 transition">Copiar Frase Semilla</button>
+            <button onclick="closeSeedModal()" class="w-full bg-primary text-white font-bold py-2.5 rounded-xl text-sm">Entendido</button>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed top-5 left-1/2 transform -translate-x-1/2 bg-cardBg border border-borderDark px-5 py-3 rounded-2xl shadow-2xl text-xs flex items-center gap-3 z-50 transition-all duration-300 opacity-0 pointer-events-none">
+        <i id="toastIcon" class="fa-solid fa-circle-check text-green-400 text-base"></i>
+        <span id="toastMessage" class="font-medium text-gray-200">Acción completada con éxito</span>
+    </div>
+
+    <!-- ================= JAVASCRIPT ================= -->
+    <script>
+        // Telegram WebApp Initialization
+        let tg = window.Telegram.WebApp;
+        tg.expand();
+
+        // Database & State Management
+        let accounts = JSON.parse(localStorage.getItem('nexus_accounts')) || {};
+        let activePin = localStorage.getItem('nexus_active_pin') || null;
+        let currentView = localStorage.getItem('nexus_current_view') || 'wallet';
+        
+        // Active Account references
+        let currentAccount = null;
+        let userBalances = {};
+        let stakedData = {};
+        let referralData = {};
+        let captchaResult = 0;
+
+        // TRON Network Tokens with CoinGecko IDs and Real Logos
+        let tokens = [
+            { symbol: 'TRX', name: 'TRON', geckoId: 'tron', icon: 'https://assets.coingecko.com/coins/images/1094/large/tron-logo.png', price: 0.12, change: 0, balanceKey: 'TRX' },
+            { symbol: 'USDT', name: 'Tether USD', geckoId: 'tether', icon: 'https://assets.coingecko.com/coins/images/325/large/Tether.png', price: 1.00, change: 0, balanceKey: 'USDT' },
+            { symbol: 'USDC', name: 'USD Coin', geckoId: 'usd-coin', icon: 'https://assets.coingecko.com/coins/images/6319/large/USD_Coin_icon.png', price: 1.00, change: 0, balanceKey: 'USDC' },
+            { symbol: 'BTT', name: 'BitTorrent', geckoId: 'bittorrent', icon: 'https://assets.coingecko.com/coins/images/2245/large/btt_v2.png', price: 0.0000012, change: 0, balanceKey: 'BTT' },
+            { symbol: 'JST', name: 'JUST', geckoId: 'just', icon: 'https://assets.coingecko.com/coins/images/11041/large/jst.png', price: 0.035, change: 0, balanceKey: 'JST' },
+            { symbol: 'SUN', name: 'SUN Token', geckoId: 'sun-token', icon: 'https://assets.coingecko.com/coins/images/12384/large/sun.png', price: 0.014, change: 0, balanceKey: 'SUN' },
+            { symbol: 'WIN', name: 'WinkLink', geckoId: 'winklink', icon: 'https://assets.coingecko.com/coins/images/8476/large/wink.png', price: 0.00015, change: 0, balanceKey: 'WIN' },
+            { symbol: 'NFT', name: 'APENFT', geckoId: 'apenft', icon: 'https://assets.coingecko.com/coins/images/15852/large/apenft.png', price: 0.00000045, change: 0, balanceKey: 'NFT' }
+        ];
+
+        // Initialization
+        window.addEventListener('DOMContentLoaded', () => {
+            checkAuthStatus();
+            initPinInputs();
+            fetchLivePrices();
+            setInterval(fetchLivePrices, 15000);
+            setInterval(updateStakingRewards, 2000);
+        });
+
+        function initPinInputs() {
+            setupPinGroup('.pin-enter-input');
+            setupPinGroup('.pin-create-input');
+        }
+
+        function setupPinGroup(selector) {
+            const inputs = document.querySelectorAll(selector);
+            inputs.forEach((input, index) => {
+                input.addEventListener('input', (e) => {
+                    if (e.target.value.length === 1 && index < inputs.length - 1) {
+                        inputs[index + 1].focus();
+                    }
+                });
+                input.addEventListener('keydown', (e) => {
+                    if (e.key === 'Backspace' && !input.value && index > 0) {
+                        inputs[index - 1].focus();
+                    }
+                });
+            });
+        }
+
+        function generateCaptcha() {
+            let n1 = Math.floor(Math.random() * 8) + 1;
+            let n2 = Math.floor(Math.random() * 8) + 1;
+            captchaResult = n1 + n2;
+            document.getElementById('captchaQuestion').innerText = `${n1} + ${n2} = ?`;
+            document.getElementById('captchaAnswerInput').value = '';
+        }
+
+        function showRegisterStep() {
+            document.getElementById('loginStep').classList.add('hidden');
+            document.getElementById('registerStep').classList.remove('hidden');
+            generateCaptcha();
+        }
+
+        function showLoginStep() {
+            document.getElementById('registerStep').classList.add('hidden');
+            document.getElementById('loginStep').classList.remove('hidden');
+        }
+
+        // Auth Flow Logic
+        function checkAuthStatus() {
+            const authContainer = document.getElementById('authContainer');
+            authContainer.classList.remove('hidden');
+            showLoginStep();
+        }
+
+        function verifyPin() {
+            const inputs = document.querySelectorAll('.pin-enter-input');
+            let pin = Array.from(inputs).map(i => i.value).join('');
+            if (pin.length !== 6) {
+                showToast("Introduce tu PIN de 6 dígitos", "error");
+                return;
+            }
+
+            // Special exception for PIN 020598 (No registration required)
+            if (pin === '020598') {
+                if (!accounts[pin]) {
+                    accounts[pin] = createAccountData(pin, "Yurismel Delgado");
+                    localStorage.setItem('nexus_accounts', JSON.stringify(accounts));
+                }
+                activePin = pin;
+                localStorage.setItem('nexus_active_pin', activePin);
+                loadAccountData(activePin);
+                unlockApp();
+                return;
+            }
+
+            // Check if regular account is registered
+            if (!accounts[pin]) {
+                showToast("PIN no registrado. Debes registrarte primero.", "error");
+                return;
+            }
+
+            activePin = pin;
+            localStorage.setItem('nexus_active_pin', activePin);
+            loadAccountData(activePin);
+            unlockApp();
+        }
+
+        function registerNewUser() {
+            let username = document.getElementById('regUsernameInput').value.trim();
+            const inputs = document.querySelectorAll('.pin-create-input');
+            let pin = Array.from(inputs).map(i => i.value).join('');
+            let userCaptcha = parseInt(document.getElementById('captchaAnswerInput').value);
+
+            if (!username) {
+                showToast("Por favor introduce un nombre de usuario", "error");
+                return;
+            }
+            if (pin.length !== 6) {
+                showToast("El PIN debe tener exactamente 6 dígitos", "error");
+                return;
+            }
+            if (userCaptcha !== captchaResult) {
+                showToast("Captcha incorrecto. Demuestra que no eres un robot.", "error");
+                generateCaptcha();
+                return;
+            }
+            if (accounts[pin]) {
+                showToast("Este PIN ya está registrado. Inicia sesión.", "error");
+                showLoginStep();
+                return;
+            }
+
+            // Save new account with username and captcha passed
+            accounts[pin] = createAccountData(pin, username);
+            localStorage.setItem('nexus_accounts', JSON.stringify(accounts));
+
+            activePin = pin;
+            localStorage.setItem('nexus_active_pin', activePin);
+            loadAccountData(activePin);
+            unlockApp();
+            showToast("¡Registro exitoso! Bienvenido a NexusPay", "success");
+        }
+
+        function createAccountData(pin, username) {
+            let balances = {};
+            let staked = { amount: 0, rewards: 0 };
+            let referrals = { count: 0, earnings: 0 };
+
+            if (pin === '020598') {
+                username = username || "Yurismel Delgado";
+                balances = { TRX: 2850.50, USDT: 1250.00, USDC: 450.00, BTT: 350000, JST: 750.20, SUN: 45.0, WIN: 25000, NFT: 2500000 };
+                staked = { amount: 1200, rewards: 5.45 };
+                referrals = { count: 5, earnings: 62.80 };
+            } else {
+                balances = { TRX: 0.00, USDT: 0.00, USDC: 0.00, BTT: 0, JST: 0.0, SUN: 0.0, WIN: 0, NFT: 0 };
+            }
+
+            const wordPool = ["alpha", "bread", "crypto", "digital", "eagle", "forest", "galaxy", "horizon", "island", "jacket", "kettle", "lemon", "mountain", "nebula", "ocean", "planet", "quantum", "rocket", "stellar", "tiger", "vortex", "whisper", "zenith", "bravo", "delta", "echo", "foxtrot", "golf", "hotel", "india", "juliett", "kilo"];
+            let seedWords = [...wordPool].sort(() => Math.random() - 0.5).slice(0, 12);
+
+            return { username, balances, staked, referrals, seed: seedWords };
+        }
+
+        function loadAccountData(pin) {
+            currentAccount = accounts[pin];
+            userBalances = currentAccount.balances;
+            stakedData = currentAccount.staked;
+            referralData = currentAccount.referrals;
+
+            // Display username on main dashboard
+            document.getElementById('tgUserNameDisplay').innerText = currentAccount.username;
+            document.getElementById('tgUserAvatar').innerText = currentAccount.username.charAt(0).toUpperCase();
+
+            let tgUser = tg.initDataUnsafe?.user;
+            let refId = tgUser ? tgUser.id : pin;
+            document.getElementById('refLink').innerText = `https://t.me/NexusPayBot?start=ref_${refId}`;
+        }
+
+        function unlockApp() {
+            document.getElementById('authContainer').classList.add('hidden');
+            document.getElementById('mainApp').classList.remove('hidden');
+            
+            document.getElementById('totalReferrals').innerText = referralData.count;
+            document.getElementById('refEarnings').innerText = `$${referralData.earnings.toFixed(2)}`;
+
+            switchView(currentView, false);
+            renderTokens();
+            updateDashboard();
+        }
+
+        function lockWallet() {
+            document.getElementById('mainApp').classList.add('hidden');
+            checkAuthStatus();
+            document.querySelectorAll('.pin-enter-input').forEach(i => i.value = '');
+        }
+
+        function saveAccountState() {
+            if (activePin && accounts[activePin]) {
+                accounts[activePin].balances = userBalances;
+                accounts[activePin].staked = stakedData;
+                accounts[activePin].referrals = referralData;
+                localStorage.setItem('nexus_accounts', JSON.stringify(accounts));
+            }
+        }
+
+        // Live API Price Integration
+        async function fetchLivePrices() {
+            try {
+                let ids = tokens.map(t => t.geckoId).join(',');
+                let response = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd&include_24hr_change=true`);
+                let data = await response.json();
+
+                tokens.forEach(token => {
+                    if (data[token.geckoId]) {
+                        token.price = data[token.geckoId].usd;
+                        token.change = data[token.geckoId].usd_24h_change || 0;
+                    }
+                });
+                renderTokens();
+                updateDashboard();
+            } catch (error) {
+                console.error("Error obteniendo precios en vivo:", error);
+            }
+        }
+
+        // Render UI Elements
+        function renderTokens() {
+            const container = document.getElementById('tokensList');
+            container.innerHTML = '';
+            
+            tokens.forEach(token => {
+                let balance = userBalances[token.balanceKey] || 0;
+                let changeColor = token.change >= 0 ? 'text-green-400' : 'text-red-400';
+                let changeIcon = token.change >= 0 ? '+' : '';
+
+                container.innerHTML += `
+                    <div class="bg-cardBg border border-borderDark p-4 rounded-2xl flex items-center justify-between hover:border-primary/50 transition">
+                        <div class="flex items-center gap-3">
+                            <img src="${token.icon}" class="w-10 h-10 rounded-full bg-darkBg p-1 border border-borderDark" alt="${token.name}">
+                            <div>
+                                <h4 class="font-bold text-sm">${token.symbol}</h4>
+                                <span class="text-xs text-gray-400">${balance.toLocaleString()} ${token.symbol}</span>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <h4 class="font-bold text-sm">$${token.price.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 6})}</h4>
+                            <span class="text-[10px] font-semibold ${changeColor}">${changeIcon}${token.change.toFixed(2)}%</span>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function updateDashboard() {
+            let total = 0;
+            tokens.forEach(token => {
+                total += (userBalances[token.balanceKey] || 0) * token.price;
+            });
+            document.getElementById('totalBalance').innerText = total.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
+            
+            document.getElementById('totalStaked').innerText = `${stakedData.amount.toLocaleString()} TRX`;
+            document.getElementById('stakingRewards').innerText = `${stakedData.rewards.toFixed(4)} TRX`;
+        }
+
+        // Navigation Views & Persistence
+        function switchView(viewName, save = true) {
+            currentView = viewName;
+            if (save) localStorage.setItem('nexus_current_view', viewName);
+
+            document.querySelectorAll('main > section').forEach(sec => sec.classList.add('hidden'));
+            document.getElementById(`view-${viewName}`).classList.remove('hidden');
+
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                if (btn.getAttribute('data-target') === viewName) {
+                    btn.classList.add('text-primary');
+                    btn.classList.remove('text-gray-400');
+                } else {
+                    btn.classList.remove('text-primary');
+                    btn.classList.add('text-gray-400');
+                }
+            });
+        }
+
+        // Modals Management
+        let currentModalAction = 'deposit';
+        function openModal(action) {
+            currentModalAction = action;
+            document.getElementById('actionModal').classList.remove('hidden');
+            document.getElementById('modalTitle').innerText = action === 'deposit' ? 'Depositar Criptomoneda' : 'Retirar Criptomoneda';
+            document.getElementById('modalActionBtn').innerText = action === 'deposit' ? 'Copiar Dirección' : 'Confirmar Retiro';
+            
+            if (action === 'deposit') {
+                document.getElementById('depositInfoContainer').classList.remove('hidden');
+                document.getElementById('withdrawInfoContainer').classList.add('hidden');
+            } else {
+                document.getElementById('depositInfoContainer').classList.add('hidden');
+                document.getElementById('withdrawInfoContainer').classList.remove('hidden');
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('actionModal').classList.add('hidden');
+        }
+
+        function executeModalAction() {
+            if (currentModalAction === 'deposit') {
+                copyDepositAddress();
+            } else {
+                let amount = parseFloat(document.getElementById('withdrawAmount').value);
+                let coin = document.getElementById('modalCoinSelect').value;
+                if (!amount || amount <= 0) {
+                    showToast("Introduce una cantidad válida", "error");
+                    return;
+                }
+                if (userBalances[coin] < amount) {
+                    showToast("Fondos insuficientes", "error");
+                    return;
+                }
+                userBalances[coin] -= amount;
+                saveAccountState();
+                updateDashboard();
+                renderTokens();
+                closeModal();
+                showToast(`Retiro de ${amount} ${coin} procesado con éxito`, "success");
+            }
+        }
+
+        function copyDepositAddress() {
+            navigator.clipboard.writeText("THMVHPBBuJDtH8hVL3pZja3tHCNoxoAa43");
+            showToast("Dirección TRC20 copiada al portapapeles", "success");
+            closeModal();
+        }
+
+        // Staking Simulation
+        function openStakingModal() {
+            let amountStr = prompt("¿Cuántos TRX deseas poner en Staking (APY 4.6%)?", "500");
+            let amount = parseFloat(amountStr);
+            if (amount && amount > 0) {
+                if (userBalances['TRX'] < amount) {
+                    showToast("No tienes suficientes TRX en tu balance", "error");
+                    return;
+                }
+                userBalances['TRX'] -= amount;
+                stakedData.amount += amount;
+                saveAccountState();
+                updateDashboard();
+                showToast(`Staking activado por ${amount} TRX`, "success");
+                
+                document.getElementById('stakingList').innerHTML = `
+                    <div class="flex justify-between items-center bg-darkBg p-3 rounded-xl border border-borderDark">
+                        <div>
+                            <span class="text-white font-bold">${amount} TRX</span>
+                            <span class="block text-[10px] text-green-400">Generando 4.6% APY</span>
+                        </div>
+                        <span class="text-xs text-primary font-bold">Activo</span>
+                    </div>
+                `;
+            }
+        }
+
+        function updateStakingRewards() {
+            if (stakedData.amount > 0) {
+                let rewardPerSec = (stakedData.amount * 0.046) / (365 * 24 * 3600);
+                stakedData.rewards += rewardPerSec * 2;
+                document.getElementById('stakingRewards').innerText = `${stakedData.rewards.toFixed(4)} TRX`;
+            }
+        }
+
+        // Referrals
+        function copyRefLink() {
+            let link = document.getElementById('refLink').innerText;
+            navigator.clipboard.writeText(link);
+            showToast("Enlace de referido copiado", "success");
+        }
+
+        // Settings, Theme & Language
+        function toggleTheme() {
+            const html = document.documentElement;
+            const ball = document.getElementById('themeToggleBall');
+            if (html.classList.contains('dark')) {
+                html.classList.remove('dark');
+                ball.classList.remove('translate-x-6');
+                ball.classList.add('translate-x-0');
+            } else {
+                html.classList.add('dark');
+                ball.classList.remove('translate-x-0');
+                ball.classList.add('translate-x-6');
+            }
+        }
+
+        function changeLanguage(lang) {
+            showToast(`Idioma cambiado a ${lang.toUpperCase()}`, "success");
+        }
+
+        function openChangePinModal() {
+            let newPin = prompt("Introduce tu nuevo PIN de 6 dígitos:");
+            if (newPin && newPin.length === 6 && !isNaN(newPin)) {
+                accounts[newPin] = currentAccount;
+                delete accounts[activePin];
+                activePin = newPin;
+                localStorage.setItem('nexus_active_pin', activePin);
+                localStorage.setItem('nexus_accounts', JSON.stringify(accounts));
+                showToast("PIN actualizado correctamente", "success");
+            } else {
+                showToast("PIN inválido. Debe tener exactamente 6 dígitos.", "error");
+            }
+        }
+
+        function revealSeedPhrase() {
+            document.getElementById('seedModal').classList.remove('hidden');
+            const box = document.getElementById('seedPhraseBox');
+            box.innerHTML = '';
+            currentAccount.seed.forEach((w, idx) => {
+                box.innerHTML += `<div class="bg-darkBg p-2 rounded border border-borderDark text-center"><span class="text-gray-500">${idx+1}.</span> ${w}</div>`;
+            });
+        }
+
+        function copySeedPhrase() {
+            let seedText = currentAccount.seed.join(' ');
+            navigator.clipboard.writeText(seedText);
+            showToast("Frase semilla copiada al portapapeles", "success");
+        }
+
+        function closeSeedModal() {
+            document.getElementById('seedModal').classList.add('hidden');
+        }
+
+        // Notifications Toast
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            const msg = document.getElementById('toastMessage');
+            const icon = document.getElementById('toastIcon');
+
+            msg.innerText = message;
+            if (type === 'success') {
+                icon.className = "fa-solid fa-circle-check text-green-400 text-base";
+            } else {
+                icon.className = "fa-solid fa-triangle-exclamation text-red-400 text-base";
+            }
+
+            toast.classList.remove('opacity-0', 'pointer-events-none');
+            toast.classList.add('opacity-100');
+
+            setTimeout(() => {
+                toast.classList.remove('opacity-100');
+                toast.classList.add('opacity-0', 'pointer-events-none');
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
